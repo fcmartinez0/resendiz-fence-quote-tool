@@ -443,6 +443,76 @@
     pointer-events: none;
   }
   .toast.show { opacity: 1; }
+
+  /* Settings modal */
+  .icon-btn {
+    background: transparent;
+    border: 1px solid var(--border);
+    border-radius: 10px;
+    width: 38px; height: 38px;
+    display: inline-flex; align-items: center; justify-content: center;
+    cursor: pointer;
+    color: var(--text);
+    -webkit-tap-highlight-color: transparent;
+    padding: 0;
+  }
+  .icon-btn:active { transform: translateY(1px); }
+  .icon-btn .icon { width: 20px; height: 20px; }
+  header h1 { gap: 8px; }
+  header .head-actions { display: flex; gap: 6px; }
+
+  .modal { position: fixed; inset: 0; z-index: 100; display: flex; }
+  .modal.hidden { display: none; }
+  .modal-overlay {
+    position: absolute; inset: 0;
+    background: rgba(15, 23, 42, 0.55);
+  }
+  .modal-content {
+    position: relative; z-index: 1;
+    background: var(--bg);
+    width: 100%; height: 100%;
+    display: flex; flex-direction: column;
+    margin: 0;
+  }
+  @media (min-width: 720px) {
+    .modal { padding: 30px 20px; align-items: center; justify-content: center; }
+    .modal-content { height: auto; max-height: 92vh; max-width: 720px; border-radius: 16px; overflow: hidden; box-shadow: 0 20px 60px rgba(0,0,0,.25); }
+  }
+  .modal-header {
+    display: flex; justify-content: space-between; align-items: center;
+    padding: 14px 16px;
+    border-bottom: 1px solid var(--border);
+    background: var(--card);
+    padding-top: calc(14px + env(safe-area-inset-top));
+  }
+  .modal-header h2 { margin: 0; font-size: 17px; }
+  .modal-body {
+    flex: 1; overflow-y: auto;
+    padding: 12px;
+    -webkit-overflow-scrolling: touch;
+  }
+  .modal-footer {
+    display: flex; gap: 8px;
+    padding: 12px;
+    padding-bottom: calc(12px + env(safe-area-inset-bottom));
+    border-top: 1px solid var(--border);
+    background: var(--card);
+  }
+  .modal-footer .btn { flex: 1; }
+  .settings-row {
+    display: grid;
+    grid-template-columns: 1fr 110px;
+    gap: 8px;
+    align-items: center;
+    padding: 8px 0;
+    border-bottom: 1px solid var(--border);
+  }
+  .settings-row:last-child { border-bottom: none; }
+  .settings-row .lbl { font-size: 13px; color: var(--text); }
+  .settings-row input { padding: 9px 10px; font-size: 14px; }
+  .settings-row.full { grid-template-columns: 1fr; }
+  .settings-row.full .lbl { font-size: 12px; font-weight: 600; color: var(--muted); text-transform: uppercase; letter-spacing: .03em; margin-bottom: 4px; }
+  .settings-help { font-size: 12px; color: var(--muted); padding: 4px 0 8px; }
 </style>
 </head>
 <body>
@@ -453,10 +523,37 @@
 <header>
   <h1>
     <span>Resendiz Fence</span>
-    <span class="sub" id="quoteId">New Quote</span>
+    <span class="head-actions">
+      <span class="sub" id="quoteId">New Quote</span>
+      <button class="icon-btn no-print" onclick="openSettings()" title="Pricing &amp; Settings" aria-label="Settings">
+        <svg class="icon" viewBox="0 0 24 24" aria-hidden="true">
+          <circle cx="12" cy="12" r="3"/>
+          <path d="M19.4 15a1.7 1.7 0 0 0 .3 1.8l.1.1a2 2 0 1 1-2.8 2.8l-.1-.1a1.7 1.7 0 0 0-1.8-.3 1.7 1.7 0 0 0-1 1.5V21a2 2 0 1 1-4 0v-.1a1.7 1.7 0 0 0-1-1.5 1.7 1.7 0 0 0-1.8.3l-.1.1a2 2 0 1 1-2.8-2.8l.1-.1a1.7 1.7 0 0 0 .3-1.8 1.7 1.7 0 0 0-1.5-1H3a2 2 0 1 1 0-4h.1a1.7 1.7 0 0 0 1.5-1 1.7 1.7 0 0 0-.3-1.8l-.1-.1a2 2 0 1 1 2.8-2.8l.1.1a1.7 1.7 0 0 0 1.8.3h0a1.7 1.7 0 0 0 1-1.5V3a2 2 0 1 1 4 0v.1a1.7 1.7 0 0 0 1 1.5h0a1.7 1.7 0 0 0 1.8-.3l.1-.1a2 2 0 1 1 2.8 2.8l-.1.1a1.7 1.7 0 0 0-.3 1.8v0a1.7 1.7 0 0 0 1.5 1H21a2 2 0 1 1 0 4h-.1a1.7 1.7 0 0 0-1.5 1z"/>
+        </svg>
+      </button>
+    </span>
   </h1>
   <div class="brand-tag">On-Site Quote Estimator</div>
 </header>
+
+<!-- Settings modal -->
+<div id="settingsModal" class="modal hidden" role="dialog" aria-label="Pricing Settings">
+  <div class="modal-overlay" onclick="closeSettings()"></div>
+  <div class="modal-content">
+    <div class="modal-header">
+      <h2>Pricing &amp; Settings</h2>
+      <button class="icon-btn" onclick="closeSettings()" aria-label="Close">
+        <svg class="icon" viewBox="0 0 24 24" aria-hidden="true"><path d="M6 6l12 12M18 6L6 18"/></svg>
+      </button>
+    </div>
+    <div class="modal-body" id="settingsBody"></div>
+    <div class="modal-footer">
+      <button class="btn btn-danger" onclick="resetSettings()">Reset</button>
+      <button class="btn" onclick="closeSettings()">Cancel</button>
+      <button class="btn btn-primary" onclick="saveSettings()">Save</button>
+    </div>
+  </div>
+</div>
 
 <main>
 
@@ -636,7 +733,23 @@ const HEIGHT_MULT = {
 };
 
 // Per-corner / end / gate post upcharge
-const CORNER_POST_COST = 45;
+let CORNER_POST_COST = 45;
+
+// Demo defaults applied to new quotes
+let DEMO_DEFAULTS = { rate: 4, haul: 0 };
+
+// Default tax rate for new quotes
+let DEFAULT_TAX = 0;
+
+// Company info shown on every printed estimate
+const COMPANY = {
+  name: "Resendiz Fence",
+  tagline: "Professional Fence Installation & Repair",
+  phone: "",
+  email: "",
+  address: "",
+  license: "",
+};
 
 // Gate defaults
 const GATE_DEFAULTS = {
@@ -658,6 +771,216 @@ const REPAIR_DEFAULTS = {
   stain_seal:   { label: "Stain / seal (per LF)", price: 4 },
   custom:       { label: "Custom repair", price: 0 },
 };
+
+// ------------------ Pricing persistence ------------------
+const STORAGE_KEY_PRICING = "fence_pricing_v1";
+
+// Deep snapshot of the original defaults so "Reset" works
+const ORIGINAL_PRICING = JSON.parse(JSON.stringify({
+  materials: MATERIAL_DEFAULTS,
+  heights: HEIGHT_MULT,
+  cornerPost: CORNER_POST_COST,
+  gates: GATE_DEFAULTS,
+  repairs: REPAIR_DEFAULTS,
+  demo: DEMO_DEFAULTS,
+  tax: DEFAULT_TAX,
+  company: COMPANY,
+}));
+
+function loadPricingOverrides() {
+  try {
+    const raw = localStorage.getItem(STORAGE_KEY_PRICING);
+    if (!raw) return;
+    const p = JSON.parse(raw);
+    if (p.materials) Object.keys(p.materials).forEach(k => {
+      if (MATERIAL_DEFAULTS[k]) Object.assign(MATERIAL_DEFAULTS[k], p.materials[k]);
+    });
+    if (p.heights) Object.assign(HEIGHT_MULT, p.heights);
+    if (typeof p.cornerPost === "number") CORNER_POST_COST = p.cornerPost;
+    if (p.gates) Object.keys(p.gates).forEach(k => {
+      if (GATE_DEFAULTS[k]) Object.assign(GATE_DEFAULTS[k], p.gates[k]);
+    });
+    if (p.repairs) Object.keys(p.repairs).forEach(k => {
+      if (REPAIR_DEFAULTS[k]) Object.assign(REPAIR_DEFAULTS[k], p.repairs[k]);
+    });
+    if (p.demo) Object.assign(DEMO_DEFAULTS, p.demo);
+    if (typeof p.tax === "number") DEFAULT_TAX = p.tax;
+    if (p.company) Object.assign(COMPANY, p.company);
+  } catch (e) { console.warn("Pricing load failed:", e); }
+}
+
+function persistPricing() {
+  const payload = {
+    materials: {}, heights: {...HEIGHT_MULT},
+    cornerPost: CORNER_POST_COST,
+    gates: {}, repairs: {},
+    demo: {...DEMO_DEFAULTS},
+    tax: DEFAULT_TAX,
+    company: {...COMPANY},
+  };
+  Object.keys(MATERIAL_DEFAULTS).forEach(k => payload.materials[k] = {label: MATERIAL_DEFAULTS[k].label, rate: MATERIAL_DEFAULTS[k].rate});
+  Object.keys(GATE_DEFAULTS).forEach(k => payload.gates[k] = {label: GATE_DEFAULTS[k].label, price: GATE_DEFAULTS[k].price});
+  Object.keys(REPAIR_DEFAULTS).forEach(k => payload.repairs[k] = {label: REPAIR_DEFAULTS[k].label, price: REPAIR_DEFAULTS[k].price});
+  localStorage.setItem(STORAGE_KEY_PRICING, JSON.stringify(payload));
+}
+
+// ------------------ Settings modal ------------------
+function openSettings() {
+  const body = $("settingsBody");
+  const row = (id, lbl, val, type="number", step="0.01") =>
+    `<div class="settings-row">
+       <div class="lbl">${lbl}</div>
+       <input id="${id}" type="${type}" ${type==='number'?`min="0" step="${step}" inputmode="decimal"`:""} value="${val ?? ""}" />
+     </div>`;
+  const rowFull = (id, lbl, val, placeholder="") =>
+    `<div class="settings-row full">
+       <div class="lbl">${lbl}</div>
+       <input id="${id}" type="text" value="${(val||"").replace(/"/g,'&quot;')}" placeholder="${placeholder}" />
+     </div>`;
+
+  const matRows = Object.entries(MATERIAL_DEFAULTS).map(([k, v]) =>
+    row("set_mat_" + k, v.label + " ($/LF)", v.rate)).join("");
+  const heightRows = Object.keys(HEIGHT_MULT).map(h =>
+    row("set_h_" + h, h + " ft multiplier", HEIGHT_MULT[h], "number", "0.01")).join("");
+  const gateRows = Object.entries(GATE_DEFAULTS).map(([k, v]) =>
+    row("set_gate_" + k, v.label + " ($)", v.price)).join("");
+  const repairRows = Object.entries(REPAIR_DEFAULTS).map(([k, v]) =>
+    row("set_rep_" + k, v.label + " ($)", v.price)).join("");
+
+  body.innerHTML = `
+    <section class="card">
+      <h2>Company Info</h2>
+      <div class="card-body">
+        <div class="settings-help">Shown on every printed estimate.</div>
+        ${rowFull("set_co_name",    "Business Name",     COMPANY.name)}
+        ${rowFull("set_co_tagline", "Tagline",            COMPANY.tagline)}
+        ${rowFull("set_co_phone",   "Phone",              COMPANY.phone,   "(555) 123-4567")}
+        ${rowFull("set_co_email",   "Email",              COMPANY.email,   "info@resendizfence.com")}
+        ${rowFull("set_co_address", "Address",            COMPANY.address, "123 Main St, City, ST")}
+        ${rowFull("set_co_license", "License #",          COMPANY.license, "")}
+      </div>
+    </section>
+
+    <section class="card">
+      <h2>Fence Materials — Base $/LF</h2>
+      <div class="card-body">
+        <div class="settings-help">Base rate before height multiplier. For a 5 or 6 ft fence the rate is used as-is.</div>
+        ${matRows}
+      </div>
+    </section>
+
+    <section class="card">
+      <h2>Height Multipliers</h2>
+      <div class="card-body">
+        <div class="settings-help">Applied to base $/LF. 1.00 = no change. Defaults: 3 ft 0.75, 4 ft 0.88, 5–6 ft 1.00, 7 ft 1.15, 8 ft 1.30.</div>
+        ${heightRows}
+      </div>
+    </section>
+
+    <section class="card">
+      <h2>Posts</h2>
+      <div class="card-body">
+        ${row("set_corner", "Corner / End / Gate Post ($ each)", CORNER_POST_COST)}
+      </div>
+    </section>
+
+    <section class="card">
+      <h2>Gate Prices</h2>
+      <div class="card-body">${gateRows}</div>
+    </section>
+
+    <section class="card">
+      <h2>Repair Prices</h2>
+      <div class="card-body">${repairRows}</div>
+    </section>
+
+    <section class="card">
+      <h2>Demo &amp; Removal Defaults</h2>
+      <div class="card-body">
+        ${row("set_demo_rate", "Remove existing fence ($/LF)", DEMO_DEFAULTS.rate)}
+        ${row("set_demo_haul", "Haul-away flat fee ($)",       DEMO_DEFAULTS.haul)}
+      </div>
+    </section>
+
+    <section class="card">
+      <h2>Tax</h2>
+      <div class="card-body">
+        ${row("set_tax", "Default tax rate (%)", DEFAULT_TAX)}
+      </div>
+    </section>
+  `;
+  $("settingsModal").classList.remove("hidden");
+  document.body.style.overflow = "hidden";
+}
+
+function closeSettings() {
+  $("settingsModal").classList.add("hidden");
+  document.body.style.overflow = "";
+}
+
+function saveSettings() {
+  const num = (id) => {
+    const el = document.getElementById(id);
+    if (!el) return null;
+    const v = parseFloat(el.value);
+    return isFinite(v) ? v : 0;
+  };
+  const txt = (id) => (document.getElementById(id)?.value || "").trim();
+
+  COMPANY.name    = txt("set_co_name") || "Resendiz Fence";
+  COMPANY.tagline = txt("set_co_tagline");
+  COMPANY.phone   = txt("set_co_phone");
+  COMPANY.email   = txt("set_co_email");
+  COMPANY.address = txt("set_co_address");
+  COMPANY.license = txt("set_co_license");
+
+  Object.keys(MATERIAL_DEFAULTS).forEach(k => MATERIAL_DEFAULTS[k].rate = num("set_mat_" + k));
+  Object.keys(HEIGHT_MULT).forEach(h => { HEIGHT_MULT[h] = num("set_h_" + h) || 1; });
+  CORNER_POST_COST = num("set_corner");
+  Object.keys(GATE_DEFAULTS).forEach(k => GATE_DEFAULTS[k].price = num("set_gate_" + k));
+  Object.keys(REPAIR_DEFAULTS).forEach(k => REPAIR_DEFAULTS[k].price = num("set_rep_" + k));
+  DEMO_DEFAULTS.rate = num("set_demo_rate");
+  DEMO_DEFAULTS.haul = num("set_demo_haul");
+  DEFAULT_TAX = num("set_tax");
+
+  persistPricing();
+
+  // Refresh non-overridden section rates from new material defaults
+  state.sections.forEach(s => {
+    if (!s.rateOverride) s.rate = MATERIAL_DEFAULTS[s.material]?.rate ?? s.rate;
+  });
+  // Refresh gate/repair prices that still match the type's old default — leave any manually edited
+  state.gates.forEach(g => { g.price = GATE_DEFAULTS[g.kind]?.price ?? g.price; g.label = GATE_DEFAULTS[g.kind]?.label ?? g.label; });
+  state.repairs.forEach(r => { if (r.kind !== "custom") { r.price = REPAIR_DEFAULTS[r.kind]?.price ?? r.price; r.label = REPAIR_DEFAULTS[r.kind]?.label ?? r.label; } });
+
+  renderSections(); renderRepairs(); renderGates(); recalc();
+  closeSettings();
+  toast("Pricing saved");
+}
+
+function resetSettings() {
+  if (!confirm("Reset all pricing and company info to built-in defaults?")) return;
+  // Restore from snapshot
+  Object.keys(MATERIAL_DEFAULTS).forEach(k => { delete MATERIAL_DEFAULTS[k]; });
+  Object.assign(MATERIAL_DEFAULTS, JSON.parse(JSON.stringify(ORIGINAL_PRICING.materials)));
+  Object.keys(HEIGHT_MULT).forEach(k => { delete HEIGHT_MULT[k]; });
+  Object.assign(HEIGHT_MULT, JSON.parse(JSON.stringify(ORIGINAL_PRICING.heights)));
+  CORNER_POST_COST = ORIGINAL_PRICING.cornerPost;
+  Object.keys(GATE_DEFAULTS).forEach(k => { delete GATE_DEFAULTS[k]; });
+  Object.assign(GATE_DEFAULTS, JSON.parse(JSON.stringify(ORIGINAL_PRICING.gates)));
+  Object.keys(REPAIR_DEFAULTS).forEach(k => { delete REPAIR_DEFAULTS[k]; });
+  Object.assign(REPAIR_DEFAULTS, JSON.parse(JSON.stringify(ORIGINAL_PRICING.repairs)));
+  Object.assign(DEMO_DEFAULTS, JSON.parse(JSON.stringify(ORIGINAL_PRICING.demo)));
+  DEFAULT_TAX = ORIGINAL_PRICING.tax;
+  Object.keys(COMPANY).forEach(k => { delete COMPANY[k]; });
+  Object.assign(COMPANY, JSON.parse(JSON.stringify(ORIGINAL_PRICING.company)));
+  localStorage.removeItem(STORAGE_KEY_PRICING);
+  openSettings();
+  toast("Reset to defaults");
+}
+
+// Apply any saved overrides before first render
+loadPricingOverrides();
 
 // ------------------ State ------------------
 const state = {
@@ -1121,9 +1444,9 @@ function applyQuote(q) {
   state.repairs = q.repairs || [];
   state.gates = q.gates || [];
   $("demoFeet").value = q.demo?.feet ?? 0;
-  $("demoRate").value = q.demo?.rate ?? 4;
-  $("demoHaul").value = q.demo?.haul ?? 0;
-  $("taxRate").value = q.taxRate ?? 0;
+  $("demoRate").value = q.demo?.rate ?? DEMO_DEFAULTS.rate;
+  $("demoHaul").value = q.demo?.haul ?? DEMO_DEFAULTS.haul;
+  $("taxRate").value = q.taxRate ?? DEFAULT_TAX;
   $("discount").value = q.discount ?? 0;
   $("notes").value = q.notes || "";
   $("quoteId").textContent = "Editing · " + (q.customer.name || "Untitled");
@@ -1146,9 +1469,9 @@ function newQuote() {
   state.repairs = [];
   state.gates = [];
   $("demoFeet").value = 0;
-  $("demoRate").value = 4;
-  $("demoHaul").value = 0;
-  $("taxRate").value = 0;
+  $("demoRate").value = DEMO_DEFAULTS.rate;
+  $("demoHaul").value = DEMO_DEFAULTS.haul;
+  $("taxRate").value = DEFAULT_TAX;
   $("discount").value = 0;
   $("notes").value = "";
   document.querySelectorAll("#jobTypePills .pill").forEach(p => p.classList.toggle("active", p.dataset.job === "new"));
@@ -1171,16 +1494,6 @@ function todayStr() {
 });
 
 // ------------------ Invoice-style print builder ------------------
-const COMPANY = {
-  name: "Resendiz Fence",
-  tagline: "Professional Fence Installation & Repair",
-  // Edit these to your real info — they show on every printed estimate
-  phone: "",
-  email: "",
-  address: "",
-  license: "",
-};
-
 function escHtml(s) {
   return String(s == null ? "" : s)
     .replace(/&/g,"&amp;").replace(/</g,"&lt;").replace(/>/g,"&gt;")
@@ -1428,6 +1741,9 @@ window.addEventListener("beforeprint", buildPrintSheet);
 
 // Initial render
 $("quoteDate").value = todayStr();
+$("demoRate").value = DEMO_DEFAULTS.rate;
+$("demoHaul").value = DEMO_DEFAULTS.haul;
+$("taxRate").value = DEFAULT_TAX;
 renderSections();
 renderRepairs();
 renderGates();
