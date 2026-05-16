@@ -1,0 +1,1417 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
+<meta name="apple-mobile-web-app-capable" content="yes" />
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
+<meta name="theme-color" content="#1f6feb" />
+<title>Resendiz Fence — Quote Estimator</title>
+<style>
+  :root {
+    --bg: #f5f6f8;
+    --card: #ffffff;
+    --text: #1a1d21;
+    --muted: #6b7280;
+    --border: #e2e5ea;
+    --accent: #1f6feb;
+    --accent-dark: #155bbf;
+    --good: #15803d;
+    --warn: #b45309;
+    --danger: #b91c1c;
+    --radius: 12px;
+    --shadow: 0 1px 2px rgba(0,0,0,.04), 0 4px 12px rgba(0,0,0,.06);
+  }
+  * { box-sizing: border-box; }
+  html, body {
+    margin: 0; padding: 0;
+    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+    background: var(--bg);
+    color: var(--text);
+    -webkit-text-size-adjust: 100%;
+  }
+  body {
+    padding: env(safe-area-inset-top) env(safe-area-inset-right) env(safe-area-inset-bottom) env(safe-area-inset-left);
+    max-width: 900px;
+    margin: 0 auto;
+  }
+  header {
+    padding: 16px 16px 8px;
+    position: sticky; top: 0;
+    background: var(--bg);
+    z-index: 10;
+    border-bottom: 1px solid var(--border);
+  }
+  h1 {
+    font-size: 20px;
+    margin: 0;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 8px;
+  }
+  h1 .sub { font-size: 12px; color: var(--muted); font-weight: 500; }
+  .brand-tag { font-size: 12px; color: var(--muted); margin-top: 2px; }
+  .print-only { display: none; }
+  .photo-strip {
+    display: flex; flex-wrap: wrap; gap: 8px;
+    margin-top: 8px;
+  }
+  .photo-thumb {
+    position: relative;
+    width: 80px; height: 80px;
+    border-radius: 8px;
+    overflow: hidden;
+    border: 1px solid var(--border);
+    background: #f0f0f0;
+  }
+  .photo-thumb img { width: 100%; height: 100%; object-fit: cover; display: block; }
+  .photo-thumb .remove-photo {
+    position: absolute; top: 2px; right: 2px;
+    width: 22px; height: 22px;
+    border-radius: 50%;
+    background: rgba(0,0,0,0.65);
+    color: #fff;
+    border: none;
+    font-size: 14px;
+    line-height: 1;
+    cursor: pointer;
+    display: flex; align-items: center; justify-content: center;
+  }
+  .photo-add-btn {
+    width: 80px; height: 80px;
+    border-radius: 8px;
+    border: 2px dashed var(--border);
+    background: #fff;
+    color: var(--muted);
+    font-size: 12px;
+    display: flex; flex-direction: column;
+    align-items: center; justify-content: center;
+    cursor: pointer;
+    gap: 4px;
+  }
+  .photo-add-btn span { font-size: 22px; line-height: 1; }
+  /* =================== INVOICE-STYLE PRINT SHEET =================== */
+  @page { size: Letter; margin: 0.5in; }
+  @media print {
+    html, body { background: #fff !important; }
+    body { max-width: 100%; padding: 0; }
+    header, main, .footer-bar, .toast, .no-print { display: none !important; }
+    #printSheet { display: block !important; }
+  }
+  #printSheet {
+    color: #1a1d21;
+    font-family: -apple-system, BlinkMacSystemFont, "Helvetica Neue", Helvetica, Arial, sans-serif;
+    font-size: 11pt;
+    line-height: 1.45;
+  }
+  #printSheet .ps-letterhead {
+    display: flex; justify-content: space-between; align-items: flex-start;
+    padding-bottom: 14px; margin-bottom: 22px;
+    border-bottom: 3px solid #1f6feb;
+  }
+  #printSheet .ps-logo {
+    display: flex; align-items: center; gap: 14px;
+  }
+  #printSheet .ps-logo-mark {
+    width: 54px; height: 54px;
+    background: #1f6feb;
+    color: #fff;
+    border-radius: 10px;
+    display: flex; align-items: center; justify-content: center;
+    font-weight: 800; font-size: 22pt; letter-spacing: -1px;
+  }
+  #printSheet .ps-brand-name {
+    font-size: 22pt; font-weight: 800; color: #1f6feb;
+    letter-spacing: -0.5px; margin: 0;
+  }
+  #printSheet .ps-brand-tag {
+    font-size: 9.5pt; color: #4b5563; margin-top: 2px;
+  }
+  #printSheet .ps-doc-meta {
+    text-align: right;
+  }
+  #printSheet .ps-doc-title {
+    font-size: 26pt; font-weight: 800; color: #1f6feb;
+    letter-spacing: 2px; margin: 0; line-height: 1;
+  }
+  #printSheet .ps-doc-num {
+    font-size: 10pt; color: #4b5563; margin-top: 8px;
+    letter-spacing: 0.5px;
+  }
+  #printSheet .ps-parties {
+    display: grid; grid-template-columns: 1fr 1fr; gap: 24px;
+    margin-bottom: 24px;
+  }
+  #printSheet .ps-party-card {
+    background: #f5f7fb;
+    border-left: 3px solid #1f6feb;
+    padding: 12px 14px;
+    border-radius: 4px;
+  }
+  #printSheet .ps-party-label {
+    font-size: 8.5pt; font-weight: 700; color: #1f6feb;
+    text-transform: uppercase; letter-spacing: 1px; margin-bottom: 6px;
+  }
+  #printSheet .ps-party-name {
+    font-size: 12pt; font-weight: 700; color: #111;
+  }
+  #printSheet .ps-party-line {
+    font-size: 10pt; color: #374151; margin-top: 2px;
+  }
+  #printSheet .ps-section-heading {
+    font-size: 10pt; font-weight: 700; color: #1f6feb;
+    text-transform: uppercase; letter-spacing: 1.2px;
+    border-bottom: 1px solid #d0d7e2;
+    padding-bottom: 4px; margin: 18px 0 8px;
+  }
+  #printSheet table.ps-items {
+    width: 100%; border-collapse: collapse;
+    margin-bottom: 14px;
+  }
+  #printSheet table.ps-items thead th {
+    background: #1f6feb; color: #fff;
+    text-align: left; padding: 8px 10px;
+    font-size: 9.5pt; font-weight: 700;
+    text-transform: uppercase; letter-spacing: 0.5px;
+  }
+  #printSheet table.ps-items thead th.num,
+  #printSheet table.ps-items thead th.amt { text-align: right; }
+  #printSheet table.ps-items tbody td {
+    padding: 9px 10px;
+    border-bottom: 1px solid #e5e7eb;
+    font-size: 10.5pt;
+    vertical-align: top;
+  }
+  #printSheet table.ps-items tbody tr:nth-child(even) td { background: #fafbfc; }
+  #printSheet table.ps-items td.num,
+  #printSheet table.ps-items td.amt { text-align: right; white-space: nowrap; }
+  #printSheet table.ps-items .ps-item-desc { font-weight: 600; color: #111; }
+  #printSheet table.ps-items .ps-item-sub  { font-size: 9pt; color: #6b7280; margin-top: 2px; }
+  #printSheet .ps-group-row td {
+    background: #eef3fb !important;
+    font-weight: 700; color: #1f6feb;
+    font-size: 9.5pt; text-transform: uppercase; letter-spacing: 0.5px;
+    padding: 6px 10px;
+  }
+  #printSheet .ps-totals-wrap {
+    display: flex; justify-content: flex-end;
+    margin-top: 6px;
+  }
+  #printSheet .ps-totals {
+    width: 56%; border-collapse: collapse;
+  }
+  #printSheet .ps-totals td {
+    padding: 6px 10px; font-size: 11pt;
+  }
+  #printSheet .ps-totals td.lbl { color: #4b5563; }
+  #printSheet .ps-totals td.val { text-align: right; }
+  #printSheet .ps-totals tr.grand td {
+    border-top: 2px solid #1f6feb;
+    padding-top: 10px; margin-top: 6px;
+    font-size: 14pt; font-weight: 800; color: #1f6feb;
+    background: #f5f7fb;
+  }
+  #printSheet .ps-notes {
+    margin-top: 22px;
+    background: #fffbeb;
+    border-left: 3px solid #f59e0b;
+    padding: 12px 14px;
+    border-radius: 4px;
+    font-size: 10pt;
+  }
+  #printSheet .ps-terms {
+    margin-top: 18px;
+    font-size: 8.5pt; color: #6b7280;
+    line-height: 1.55;
+  }
+  #printSheet .ps-signatures {
+    display: grid; grid-template-columns: 1fr 1fr; gap: 30px;
+    margin-top: 28px;
+  }
+  #printSheet .ps-sig-block .ps-sig-line {
+    border-bottom: 1px solid #1a1d21;
+    height: 32px;
+  }
+  #printSheet .ps-sig-block .ps-sig-label {
+    font-size: 9pt; color: #4b5563; margin-top: 4px;
+  }
+  #printSheet .ps-photos {
+    margin-top: 24px;
+    page-break-before: auto;
+  }
+  #printSheet .ps-photo-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 10px;
+  }
+  #printSheet .ps-photo-tile {
+    border: 1px solid #d0d7e2;
+    border-radius: 4px;
+    overflow: hidden;
+    page-break-inside: avoid;
+  }
+  #printSheet .ps-photo-tile img {
+    width: 100%; display: block;
+    max-height: 3.2in; object-fit: cover;
+  }
+  #printSheet .ps-photo-cap {
+    padding: 4px 8px;
+    font-size: 8.5pt;
+    color: #4b5563;
+    background: #f5f7fb;
+  }
+  #printSheet .ps-footer {
+    margin-top: 30px;
+    text-align: center;
+    font-size: 9pt;
+    color: #6b7280;
+    padding-top: 12px;
+    border-top: 1px solid #d0d7e2;
+  }
+  main { padding: 12px 12px 120px; }
+  .card {
+    background: var(--card);
+    border: 1px solid var(--border);
+    border-radius: var(--radius);
+    margin-bottom: 12px;
+    overflow: hidden;
+    box-shadow: var(--shadow);
+  }
+  .card h2 {
+    font-size: 15px;
+    margin: 0;
+    padding: 14px 16px;
+    background: #fafbfc;
+    border-bottom: 1px solid var(--border);
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+  }
+  .card-body { padding: 14px 16px; }
+  .row { display: flex; gap: 10px; flex-wrap: wrap; }
+  .row > * { flex: 1 1 140px; min-width: 0; }
+  label {
+    display: block;
+    font-size: 12px;
+    font-weight: 600;
+    color: var(--muted);
+    margin-bottom: 6px;
+    text-transform: uppercase;
+    letter-spacing: .03em;
+  }
+  input[type=text], input[type=number], input[type=tel], input[type=email], select, textarea {
+    width: 100%;
+    padding: 12px 12px;
+    font-size: 16px;
+    border: 1px solid var(--border);
+    border-radius: 10px;
+    background: #fff;
+    color: var(--text);
+    font-family: inherit;
+    -webkit-appearance: none;
+    appearance: none;
+  }
+  select { background-image: url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='12' height='8' viewBox='0 0 12 8'><path fill='%236b7280' d='M6 8L0 0h12z'/></svg>"); background-repeat: no-repeat; background-position: right 12px center; padding-right: 32px; }
+  textarea { resize: vertical; min-height: 70px; }
+  input:focus, select:focus, textarea:focus { outline: 2px solid var(--accent); outline-offset: -1px; border-color: transparent; }
+  .field-help { font-size: 11px; color: var(--muted); margin-top: 4px; }
+  .field { margin-bottom: 12px; }
+
+  .btn {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: 6px;
+    padding: 12px 16px;
+    border-radius: 10px;
+    font-size: 15px;
+    font-weight: 600;
+    border: 1px solid var(--border);
+    background: #fff;
+    color: var(--text);
+    cursor: pointer;
+    font-family: inherit;
+    -webkit-tap-highlight-color: transparent;
+  }
+  .btn:active { transform: translateY(1px); }
+  .btn-primary { background: var(--accent); color: #fff; border-color: var(--accent); }
+  .btn-primary:hover { background: var(--accent-dark); }
+  .btn-danger { color: var(--danger); border-color: #f3c2c2; background: #fff5f5; }
+  .btn-ghost { background: transparent; border-color: transparent; color: var(--accent); padding: 8px 10px; }
+  .btn-block { width: 100%; }
+
+  .pill-group { display: flex; flex-wrap: wrap; gap: 6px; }
+  .pill {
+    padding: 8px 12px;
+    border: 1px solid var(--border);
+    border-radius: 999px;
+    background: #fff;
+    font-size: 13px;
+    font-weight: 500;
+    cursor: pointer;
+    -webkit-tap-highlight-color: transparent;
+  }
+  .pill.active { background: var(--accent); color: #fff; border-color: var(--accent); }
+
+  .line-item {
+    border: 1px solid var(--border);
+    border-radius: 10px;
+    padding: 12px;
+    margin-bottom: 10px;
+    background: #fafbfc;
+  }
+  .line-item-head {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 8px;
+  }
+  .line-item-title { font-weight: 600; font-size: 14px; }
+  .line-item-cost { font-weight: 700; font-size: 14px; color: var(--good); }
+
+  .totals { padding: 14px 16px; background: #fafbfc; border-top: 1px solid var(--border); }
+  .totals .row-line {
+    display: flex;
+    justify-content: space-between;
+    padding: 6px 0;
+    font-size: 14px;
+  }
+  .totals .row-line.grand { font-size: 18px; font-weight: 700; border-top: 1px solid var(--border); margin-top: 8px; padding-top: 12px; }
+
+  .footer-bar {
+    position: fixed; left: 0; right: 0; bottom: 0;
+    background: #ffffffee;
+    backdrop-filter: blur(10px);
+    border-top: 1px solid var(--border);
+    padding: 10px 12px calc(10px + env(safe-area-inset-bottom));
+    display: flex;
+    gap: 8px;
+    z-index: 20;
+  }
+  .footer-bar .btn { flex: 1; }
+  .footer-bar .total-display {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    padding-left: 4px;
+  }
+  .footer-bar .total-display small { font-size: 11px; color: var(--muted); }
+  .footer-bar .total-display strong { font-size: 18px; }
+
+  .muted { color: var(--muted); }
+  .small { font-size: 12px; }
+  .grid-2 { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
+  .grid-3 { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 10px; }
+  @media (max-width: 480px) {
+    .grid-3 { grid-template-columns: 1fr 1fr; }
+  }
+  .hidden { display: none !important; }
+
+  /* Print styles for the quote sheet */
+  @media print {
+    body { background: #fff; max-width: 100%; }
+    header, .footer-bar, .no-print { display: none !important; }
+    main { padding: 0; }
+    .card { box-shadow: none; border: 1px solid #ccc; page-break-inside: avoid; }
+    .card h2 { background: #fff; }
+  }
+
+  .toast {
+    position: fixed;
+    bottom: 90px; left: 50%;
+    transform: translateX(-50%);
+    background: #1a1d21;
+    color: #fff;
+    padding: 10px 16px;
+    border-radius: 999px;
+    font-size: 13px;
+    z-index: 30;
+    box-shadow: var(--shadow);
+    opacity: 0;
+    transition: opacity .2s;
+    pointer-events: none;
+  }
+  .toast.show { opacity: 1; }
+</style>
+</head>
+<body>
+
+<!-- Invoice-style print sheet (hidden on screen, shown on print) -->
+<div id="printSheet" class="print-only"></div>
+
+<header>
+  <h1>
+    <span>Resendiz Fence</span>
+    <span class="sub" id="quoteId">New Quote</span>
+  </h1>
+  <div class="brand-tag">On-Site Quote Estimator</div>
+</header>
+
+<main>
+
+  <!-- JOB TYPE -->
+  <section class="card">
+    <h2>Job Type</h2>
+    <div class="card-body">
+      <div class="pill-group" id="jobTypePills">
+        <div class="pill active" data-job="new">New Install</div>
+        <div class="pill" data-job="repair">Repair</div>
+        <div class="pill" data-job="replace">Replace</div>
+      </div>
+    </div>
+  </section>
+
+  <!-- CUSTOMER INFO -->
+  <section class="card">
+    <h2>Customer Info</h2>
+    <div class="card-body">
+      <div class="field">
+        <label>Customer Name</label>
+        <input type="text" id="custName" placeholder="John Smith" autocomplete="name" />
+      </div>
+      <div class="row">
+        <div class="field">
+          <label>Phone</label>
+          <input type="tel" id="custPhone" placeholder="(555) 123-4567" autocomplete="tel" />
+        </div>
+        <div class="field">
+          <label>Email</label>
+          <input type="email" id="custEmail" placeholder="john@example.com" autocomplete="email" />
+        </div>
+      </div>
+      <div class="field">
+        <label>Job Address</label>
+        <textarea id="custAddress" placeholder="123 Main St, Springfield"></textarea>
+      </div>
+      <div class="field">
+        <label>Estimate Date</label>
+        <input type="text" id="quoteDate" />
+      </div>
+    </div>
+  </section>
+
+  <!-- FENCE SECTIONS -->
+  <section class="card" id="sectionsCard">
+    <h2>
+      <span>Fence Sections</span>
+      <button class="btn btn-ghost no-print" onclick="addSection()">+ Add Section</button>
+    </h2>
+    <div class="card-body" id="sectionsList"></div>
+  </section>
+
+  <!-- REPAIRS (only shown for repair jobs) -->
+  <section class="card hidden" id="repairsCard">
+    <h2>
+      <span>Repair Items</span>
+      <button class="btn btn-ghost no-print" onclick="addRepair()">+ Add Repair</button>
+    </h2>
+    <div class="card-body" id="repairsList"></div>
+  </section>
+
+  <!-- GATES -->
+  <section class="card">
+    <h2>
+      <span>Gates</span>
+      <button class="btn btn-ghost no-print" onclick="addGate()">+ Add Gate</button>
+    </h2>
+    <div class="card-body" id="gatesList">
+      <div class="muted small" id="gatesEmpty">No gates added.</div>
+    </div>
+  </section>
+
+  <!-- DEMO -->
+  <section class="card">
+    <h2>Demo / Removal of Old Fence</h2>
+    <div class="card-body">
+      <div class="row">
+        <div class="field">
+          <label>Linear Feet to Remove</label>
+          <input type="number" id="demoFeet" min="0" step="1" value="0" inputmode="numeric" />
+        </div>
+        <div class="field">
+          <label>$ / Linear Foot</label>
+          <input type="number" id="demoRate" min="0" step="0.01" value="4" inputmode="decimal" />
+        </div>
+      </div>
+      <div class="field">
+        <label>Haul-Away Flat Fee ($)</label>
+        <input type="number" id="demoHaul" min="0" step="0.01" value="0" inputmode="decimal" />
+      </div>
+    </div>
+  </section>
+
+  <!-- ADJUSTMENTS -->
+  <section class="card">
+    <h2>Adjustments</h2>
+    <div class="card-body">
+      <div class="row">
+        <div class="field">
+          <label>Tax Rate (%)</label>
+          <input type="number" id="taxRate" min="0" step="0.01" value="0" inputmode="decimal" />
+        </div>
+        <div class="field">
+          <label>Discount ($)</label>
+          <input type="number" id="discount" min="0" step="0.01" value="0" inputmode="decimal" />
+        </div>
+      </div>
+      <div class="field">
+        <label>Notes for Customer</label>
+        <textarea id="notes" placeholder="Includes haul-away. 50% deposit due at signing."></textarea>
+      </div>
+    </div>
+  </section>
+
+  <!-- TOTALS -->
+  <section class="card">
+    <h2>Quote Summary</h2>
+    <div class="card-body" id="summaryBody"></div>
+    <div class="totals" id="totalsBlock"></div>
+  </section>
+
+  <div class="row no-print">
+    <button class="btn btn-block" onclick="saveQuote()">💾 Save</button>
+    <button class="btn btn-block" onclick="loadQuotes()">📂 Open</button>
+    <button class="btn btn-block btn-danger" onclick="newQuote()">🗑 New</button>
+  </div>
+
+</main>
+
+<div class="footer-bar no-print">
+  <div class="total-display">
+    <small>Estimated Total</small>
+    <strong id="footerTotal">$0.00</strong>
+  </div>
+  <button class="btn btn-primary" onclick="window.print()">🖨 Print / PDF</button>
+</div>
+
+<div class="toast" id="toast"></div>
+
+<script>
+/* ----------------------------------------------------------
+   Fence Quote Estimator — single-file mobile web app
+   Pricing is editable per line. Defaults are a starting point
+   and should be tuned to your local market.
+---------------------------------------------------------- */
+
+// Default per-linear-foot pricing for new installs
+const MATERIAL_DEFAULTS = {
+  wood_cedar_privacy: { label: "Wood — Cedar Privacy", rate: 38 },
+  wood_pine_privacy:  { label: "Wood — Pine Privacy",  rate: 28 },
+  wood_picket:        { label: "Wood — Picket",        rate: 24 },
+  wood_shadowbox:     { label: "Wood — Shadowbox",     rate: 36 },
+  vinyl_privacy:      { label: "Vinyl Privacy",        rate: 52 },
+  vinyl_picket:       { label: "Vinyl Picket",         rate: 42 },
+  chainlink_galv:     { label: "Chain Link — Galvanized", rate: 18 },
+  chainlink_vinyl:    { label: "Chain Link — Vinyl Coated", rate: 24 },
+  aluminum_orn:       { label: "Aluminum Ornamental",  rate: 48 },
+  wrought_iron:       { label: "Wrought Iron",         rate: 65 },
+};
+
+// Height multipliers applied to the per-foot rate
+const HEIGHT_MULT = {
+  "3": 0.75, "4": 0.88, "5": 1.0, "6": 1.0, "7": 1.15, "8": 1.30
+};
+
+// Per-corner / end / gate post upcharge
+const CORNER_POST_COST = 45;
+
+// Gate defaults
+const GATE_DEFAULTS = {
+  walk_single: { label: "Walk Gate (Single, 4 ft)", price: 285 },
+  walk_double: { label: "Walk Gate (Double, 8 ft)", price: 520 },
+  drive_single:{ label: "Drive Gate (Single, 10 ft)", price: 685 },
+  drive_double:{ label: "Drive Gate (Double, 12-16 ft)", price: 1150 },
+};
+
+// Repair defaults
+const REPAIR_DEFAULTS = {
+  post_replace: { label: "Replace post (each)", price: 145 },
+  panel_replace:{ label: "Replace panel/section (each)", price: 185 },
+  picket_replace:{label: "Replace picket (each)", price: 12 },
+  rail_replace: { label: "Replace rail (each)", price: 38 },
+  reset_post:   { label: "Reset leaning post (each)", price: 95 },
+  gate_repair:  { label: "Gate repair / re-hang", price: 165 },
+  hardware:     { label: "Replace gate hardware set", price: 75 },
+  stain_seal:   { label: "Stain / seal (per LF)", price: 4 },
+  custom:       { label: "Custom repair", price: 0 },
+};
+
+// ------------------ State ------------------
+const state = {
+  jobType: "new",
+  sections: [],
+  repairs: [],
+  gates: [],
+};
+
+const $ = (id) => document.getElementById(id);
+const fmt = (n) => "$" + (Math.round(n * 100) / 100).toFixed(2).replace(/\B(?=(\d{3})+(?!\d))/g, ",");
+
+function uid() { return Math.random().toString(36).slice(2, 9); }
+
+function toast(msg) {
+  const t = $("toast");
+  t.textContent = msg;
+  t.classList.add("show");
+  clearTimeout(t._timer);
+  t._timer = setTimeout(() => t.classList.remove("show"), 1600);
+}
+
+// ------------------ Sections ------------------
+function addSection(preset) {
+  state.sections.push(Object.assign({
+    id: uid(),
+    material: "wood_cedar_privacy",
+    height: "6",
+    feet: 100,
+    rate: MATERIAL_DEFAULTS.wood_cedar_privacy.rate,
+    corners: 2,
+    rateOverride: false,
+    photos: [],
+    note: "",
+  }, preset || {}));
+  renderSections();
+  recalc();
+}
+
+// Compress + add photos to a section
+function addPhotosToSection(id, fileList) {
+  const s = state.sections.find(s => s.id === id);
+  if (!s) return;
+  const files = Array.from(fileList || []);
+  if (files.length === 0) return;
+  let pending = files.length;
+  files.forEach(file => {
+    if (!file.type.startsWith("image/")) { pending--; return; }
+    const reader = new FileReader();
+    reader.onload = (e) => {
+      const img = new Image();
+      img.onload = () => {
+        const MAX = 1280;
+        let w = img.width, h = img.height;
+        if (w > MAX || h > MAX) {
+          const scale = Math.min(MAX / w, MAX / h);
+          w = Math.round(w * scale);
+          h = Math.round(h * scale);
+        }
+        const canvas = document.createElement("canvas");
+        canvas.width = w; canvas.height = h;
+        const ctx = canvas.getContext("2d");
+        ctx.drawImage(img, 0, 0, w, h);
+        const dataUrl = canvas.toDataURL("image/jpeg", 0.78);
+        s.photos = s.photos || [];
+        s.photos.push({ id: uid(), data: dataUrl });
+        pending--;
+        if (pending === 0) { renderSections(); recalc(); toast("Photo added"); }
+      };
+      img.onerror = () => { pending--; if (pending === 0) renderSections(); };
+      img.src = e.target.result;
+    };
+    reader.onerror = () => { pending--; if (pending === 0) renderSections(); };
+    reader.readAsDataURL(file);
+  });
+}
+
+function removeSectionPhoto(sectionId, photoId) {
+  const s = state.sections.find(s => s.id === sectionId);
+  if (!s || !s.photos) return;
+  s.photos = s.photos.filter(p => p.id !== photoId);
+  renderSections();
+}
+
+function triggerPhotoInput(sectionId) {
+  const input = document.getElementById("photoInput-" + sectionId);
+  if (input) input.click();
+}
+
+function removeSection(id) {
+  state.sections = state.sections.filter(s => s.id !== id);
+  renderSections();
+  recalc();
+}
+
+function updateSection(id, key, val) {
+  const s = state.sections.find(s => s.id === id);
+  if (!s) return;
+  s[key] = val;
+  if (key === "material" && !s.rateOverride) {
+    s.rate = MATERIAL_DEFAULTS[val].rate;
+  }
+  if (key === "rate") s.rateOverride = true;
+  renderSections();
+  recalc();
+}
+
+function sectionCost(s) {
+  const base = (MATERIAL_DEFAULTS[s.material]?.rate || 0);
+  const rate = s.rateOverride ? Number(s.rate) : base;
+  const hMult = HEIGHT_MULT[s.height] || 1;
+  const linear = Number(s.feet) * rate * hMult;
+  const cornerCost = Number(s.corners) * CORNER_POST_COST;
+  return { linear, cornerCost, total: linear + cornerCost, effectiveRate: rate * hMult };
+}
+
+function renderSections() {
+  const list = $("sectionsList");
+  if (state.sections.length === 0) {
+    list.innerHTML = '<div class="muted small">No sections added. Tap "+ Add Section" to start.</div>';
+    return;
+  }
+  list.innerHTML = state.sections.map((s, i) => {
+    const c = sectionCost(s);
+    const matOptions = Object.entries(MATERIAL_DEFAULTS).map(([k,v]) =>
+      `<option value="${k}" ${s.material===k?"selected":""}>${v.label}</option>`
+    ).join("");
+    const heightOptions = ["3","4","5","6","7","8"].map(h =>
+      `<option value="${h}" ${s.height===h?"selected":""}>${h} ft</option>`
+    ).join("");
+    return `
+      <div class="line-item">
+        <div class="line-item-head">
+          <div class="line-item-title">Section ${i+1}</div>
+          <div class="line-item-cost">${fmt(c.total)}</div>
+        </div>
+        <div class="field">
+          <label>Material</label>
+          <select onchange="updateSection('${s.id}','material',this.value)">${matOptions}</select>
+        </div>
+        <div class="grid-3">
+          <div class="field">
+            <label>Height</label>
+            <select onchange="updateSection('${s.id}','height',this.value)">${heightOptions}</select>
+          </div>
+          <div class="field">
+            <label>Linear Ft</label>
+            <input type="number" min="0" step="1" inputmode="numeric" value="${s.feet}"
+              onchange="updateSection('${s.id}','feet',Number(this.value))" />
+          </div>
+          <div class="field">
+            <label>$ / Ft (base)</label>
+            <input type="number" min="0" step="0.01" inputmode="decimal" value="${s.rate}"
+              onchange="updateSection('${s.id}','rate',Number(this.value))" />
+          </div>
+        </div>
+        <div class="field">
+          <label>Corner / End / Gate Posts (${fmt(CORNER_POST_COST)} ea)</label>
+          <input type="number" min="0" step="1" inputmode="numeric" value="${s.corners}"
+            onchange="updateSection('${s.id}','corners',Number(this.value))" />
+        </div>
+        <div class="small muted">
+          Effective rate: ${fmt(c.effectiveRate)}/ft × ${s.feet} ft = ${fmt(c.linear)} +
+          ${s.corners} posts = ${fmt(c.cornerCost)}
+        </div>
+        <div class="field" style="margin-top:12px;">
+          <label>Section Notes (optional)</label>
+          <input type="text" placeholder="e.g. north property line, slope, gate location"
+            value="${(s.note||"").replace(/"/g,'&quot;')}"
+            onchange="updateSection('${s.id}','note',this.value)" />
+        </div>
+        <div class="field">
+          <label>Photos (${(s.photos||[]).length})</label>
+          <div class="photo-strip">
+            ${(s.photos||[]).map(p => `
+              <div class="photo-thumb">
+                <img src="${p.data}" alt="Section photo" />
+                <button class="remove-photo no-print" onclick="removeSectionPhoto('${s.id}','${p.id}')" title="Remove">×</button>
+              </div>`).join("")}
+            <button type="button" class="photo-add-btn no-print" onclick="triggerPhotoInput('${s.id}')">
+              <span>+</span>Add Photo
+            </button>
+            <input type="file" id="photoInput-${s.id}" accept="image/*" capture="environment" multiple
+              style="display:none;" onchange="addPhotosToSection('${s.id}', this.files); this.value='';" />
+          </div>
+        </div>
+        <div style="margin-top:10px;">
+          <button class="btn btn-danger no-print" onclick="removeSection('${s.id}')">Remove</button>
+        </div>
+      </div>`;
+  }).join("");
+}
+
+// ------------------ Repairs ------------------
+function addRepair() {
+  state.repairs.push({ id: uid(), kind: "post_replace", qty: 1, price: REPAIR_DEFAULTS.post_replace.price, label: REPAIR_DEFAULTS.post_replace.label });
+  renderRepairs();
+  recalc();
+}
+function removeRepair(id) {
+  state.repairs = state.repairs.filter(r => r.id !== id);
+  renderRepairs();
+  recalc();
+}
+function updateRepair(id, key, val) {
+  const r = state.repairs.find(r => r.id === id);
+  if (!r) return;
+  if (key === "kind") {
+    r.kind = val;
+    r.label = REPAIR_DEFAULTS[val].label;
+    r.price = REPAIR_DEFAULTS[val].price;
+  } else {
+    r[key] = val;
+  }
+  renderRepairs();
+  recalc();
+}
+function repairCost(r) { return Number(r.qty) * Number(r.price); }
+function renderRepairs() {
+  const list = $("repairsList");
+  if (state.repairs.length === 0) {
+    list.innerHTML = '<div class="muted small">No repair items. Tap "+ Add Repair" to start.</div>';
+    return;
+  }
+  list.innerHTML = state.repairs.map((r,i) => {
+    const opts = Object.entries(REPAIR_DEFAULTS).map(([k,v]) =>
+      `<option value="${k}" ${r.kind===k?"selected":""}>${v.label}</option>`).join("");
+    return `
+      <div class="line-item">
+        <div class="line-item-head">
+          <div class="line-item-title">Repair ${i+1}</div>
+          <div class="line-item-cost">${fmt(repairCost(r))}</div>
+        </div>
+        <div class="field">
+          <label>Repair Type</label>
+          <select onchange="updateRepair('${r.id}','kind',this.value)">${opts}</select>
+        </div>
+        ${r.kind === "custom" ? `
+        <div class="field">
+          <label>Description</label>
+          <input type="text" value="${r.label.replace(/"/g,'&quot;')}"
+            onchange="updateRepair('${r.id}','label',this.value)" />
+        </div>` : ""}
+        <div class="grid-2">
+          <div class="field">
+            <label>Qty</label>
+            <input type="number" min="0" step="1" inputmode="numeric" value="${r.qty}"
+              onchange="updateRepair('${r.id}','qty',Number(this.value))" />
+          </div>
+          <div class="field">
+            <label>Price each</label>
+            <input type="number" min="0" step="0.01" inputmode="decimal" value="${r.price}"
+              onchange="updateRepair('${r.id}','price',Number(this.value))" />
+          </div>
+        </div>
+        <button class="btn btn-danger no-print" onclick="removeRepair('${r.id}')">Remove</button>
+      </div>`;
+  }).join("");
+}
+
+// ------------------ Gates ------------------
+function addGate() {
+  state.gates.push({ id: uid(), kind: "walk_single", qty: 1, price: GATE_DEFAULTS.walk_single.price, label: GATE_DEFAULTS.walk_single.label });
+  renderGates();
+  recalc();
+}
+function removeGate(id) {
+  state.gates = state.gates.filter(g => g.id !== id);
+  renderGates();
+  recalc();
+}
+function updateGate(id, key, val) {
+  const g = state.gates.find(g => g.id === id);
+  if (!g) return;
+  if (key === "kind") {
+    g.kind = val;
+    g.label = GATE_DEFAULTS[val].label;
+    g.price = GATE_DEFAULTS[val].price;
+  } else {
+    g[key] = val;
+  }
+  renderGates();
+  recalc();
+}
+function gateCost(g) { return Number(g.qty) * Number(g.price); }
+function renderGates() {
+  const list = $("gatesList");
+  if (state.gates.length === 0) {
+    list.innerHTML = '<div class="muted small" id="gatesEmpty">No gates added.</div>';
+    return;
+  }
+  list.innerHTML = state.gates.map((g,i) => {
+    const opts = Object.entries(GATE_DEFAULTS).map(([k,v]) =>
+      `<option value="${k}" ${g.kind===k?"selected":""}>${v.label}</option>`).join("");
+    return `
+      <div class="line-item">
+        <div class="line-item-head">
+          <div class="line-item-title">Gate ${i+1}</div>
+          <div class="line-item-cost">${fmt(gateCost(g))}</div>
+        </div>
+        <div class="field">
+          <label>Gate Type</label>
+          <select onchange="updateGate('${g.id}','kind',this.value)">${opts}</select>
+        </div>
+        <div class="grid-2">
+          <div class="field">
+            <label>Qty</label>
+            <input type="number" min="0" step="1" inputmode="numeric" value="${g.qty}"
+              onchange="updateGate('${g.id}','qty',Number(this.value))" />
+          </div>
+          <div class="field">
+            <label>Price each</label>
+            <input type="number" min="0" step="0.01" inputmode="decimal" value="${g.price}"
+              onchange="updateGate('${g.id}','price',Number(this.value))" />
+          </div>
+        </div>
+        <button class="btn btn-danger no-print" onclick="removeGate('${g.id}')">Remove</button>
+      </div>`;
+  }).join("");
+}
+
+// ------------------ Job type pills ------------------
+$("jobTypePills").addEventListener("click", (e) => {
+  const pill = e.target.closest(".pill");
+  if (!pill) return;
+  document.querySelectorAll("#jobTypePills .pill").forEach(p => p.classList.remove("active"));
+  pill.classList.add("active");
+  state.jobType = pill.dataset.job;
+  // Show repairs card if job is repair, hide otherwise (but keep data)
+  $("repairsCard").classList.toggle("hidden", state.jobType !== "repair");
+  if (state.jobType === "repair" && state.repairs.length === 0) addRepair();
+  recalc();
+});
+
+// ------------------ Recalc / Summary ------------------
+function recalc() {
+  let sectionsTotal = 0, sectionsLinear = 0, sectionsCorners = 0;
+  state.sections.forEach(s => {
+    const c = sectionCost(s);
+    sectionsTotal += c.total;
+    sectionsLinear += c.linear;
+    sectionsCorners += c.cornerCost;
+  });
+  let gatesTotal = state.gates.reduce((a,g) => a + gateCost(g), 0);
+  let repairsTotal = state.repairs.reduce((a,r) => a + repairCost(r), 0);
+
+  const demoFeet = Number($("demoFeet").value) || 0;
+  const demoRate = Number($("demoRate").value) || 0;
+  const demoHaul = Number($("demoHaul").value) || 0;
+  const demoTotal = demoFeet * demoRate + demoHaul;
+
+  const subtotal = sectionsTotal + gatesTotal + repairsTotal + demoTotal;
+  const discount = Number($("discount").value) || 0;
+  const afterDiscount = Math.max(0, subtotal - discount);
+  const taxRate = Number($("taxRate").value) || 0;
+  const tax = afterDiscount * (taxRate / 100);
+  const grand = afterDiscount + tax;
+
+  // Render summary lines
+  const lines = [];
+  if (sectionsTotal > 0) {
+    state.sections.forEach((s, i) => {
+      const c = sectionCost(s);
+      lines.push(`<div class="row-line"><span>Section ${i+1}: ${MATERIAL_DEFAULTS[s.material].label}, ${s.height} ft × ${s.feet} ft + ${s.corners} posts</span><span>${fmt(c.total)}</span></div>`);
+    });
+  }
+  if (state.gates.length > 0) {
+    state.gates.forEach(g => {
+      lines.push(`<div class="row-line"><span>${g.label} × ${g.qty}</span><span>${fmt(gateCost(g))}</span></div>`);
+    });
+  }
+  if (state.jobType === "repair" && state.repairs.length > 0) {
+    state.repairs.forEach(r => {
+      lines.push(`<div class="row-line"><span>${r.label} × ${r.qty}</span><span>${fmt(repairCost(r))}</span></div>`);
+    });
+  }
+  if (demoTotal > 0) {
+    lines.push(`<div class="row-line"><span>Demo: ${demoFeet} ft × ${fmt(demoRate)}${demoHaul ? " + haul " + fmt(demoHaul) : ""}</span><span>${fmt(demoTotal)}</span></div>`);
+  }
+  if (lines.length === 0) {
+    $("summaryBody").innerHTML = '<div class="muted small">Add fence sections, gates, repairs, or demo to see your quote.</div>';
+  } else {
+    $("summaryBody").innerHTML = lines.join("");
+  }
+
+  $("totalsBlock").innerHTML = `
+    <div class="row-line"><span>Subtotal</span><span>${fmt(subtotal)}</span></div>
+    ${discount > 0 ? `<div class="row-line"><span>Discount</span><span>−${fmt(discount)}</span></div>` : ""}
+    ${tax > 0 ? `<div class="row-line"><span>Tax (${taxRate}%)</span><span>${fmt(tax)}</span></div>` : ""}
+    <div class="row-line grand"><span>Total</span><span>${fmt(grand)}</span></div>
+  `;
+  $("footerTotal").textContent = fmt(grand);
+}
+
+// ------------------ Save / Load ------------------
+const STORAGE_KEY = "fence_quotes_v1";
+
+function gatherForm() {
+  return {
+    id: window._currentQuoteId || uid(),
+    savedAt: new Date().toISOString(),
+    customer: {
+      name: $("custName").value,
+      phone: $("custPhone").value,
+      email: $("custEmail").value,
+      address: $("custAddress").value,
+      date: $("quoteDate").value,
+    },
+    jobType: state.jobType,
+    sections: state.sections,
+    repairs: state.repairs,
+    gates: state.gates,
+    demo: {
+      feet: Number($("demoFeet").value) || 0,
+      rate: Number($("demoRate").value) || 0,
+      haul: Number($("demoHaul").value) || 0,
+    },
+    taxRate: Number($("taxRate").value) || 0,
+    discount: Number($("discount").value) || 0,
+    notes: $("notes").value,
+  };
+}
+
+function saveQuote() {
+  const q = gatherForm();
+  window._currentQuoteId = q.id;
+  const all = JSON.parse(localStorage.getItem(STORAGE_KEY) || "[]");
+  const idx = all.findIndex(x => x.id === q.id);
+  if (idx >= 0) all[idx] = q; else all.push(q);
+  localStorage.setItem(STORAGE_KEY, JSON.stringify(all));
+  $("quoteId").textContent = "Saved · " + (q.customer.name || "Untitled");
+  toast("Quote saved");
+}
+
+function loadQuotes() {
+  const all = JSON.parse(localStorage.getItem(STORAGE_KEY) || "[]");
+  if (all.length === 0) { toast("No saved quotes yet"); return; }
+  const list = all.map((q, i) =>
+    `${i+1}. ${q.customer.name || "Untitled"} — ${new Date(q.savedAt).toLocaleDateString()}`
+  ).join("\n");
+  const pick = prompt("Saved quotes:\n\n" + list + "\n\nEnter number to open (or blank to cancel):");
+  const n = parseInt(pick, 10);
+  if (!n || n < 1 || n > all.length) return;
+  applyQuote(all[n-1]);
+  toast("Quote loaded");
+}
+
+function applyQuote(q) {
+  window._currentQuoteId = q.id;
+  $("custName").value = q.customer.name || "";
+  $("custPhone").value = q.customer.phone || "";
+  $("custEmail").value = q.customer.email || "";
+  $("custAddress").value = q.customer.address || "";
+  $("quoteDate").value = q.customer.date || todayStr();
+  state.jobType = q.jobType || "new";
+  document.querySelectorAll("#jobTypePills .pill").forEach(p => {
+    p.classList.toggle("active", p.dataset.job === state.jobType);
+  });
+  $("repairsCard").classList.toggle("hidden", state.jobType !== "repair");
+  state.sections = q.sections || [];
+  state.repairs = q.repairs || [];
+  state.gates = q.gates || [];
+  $("demoFeet").value = q.demo?.feet ?? 0;
+  $("demoRate").value = q.demo?.rate ?? 4;
+  $("demoHaul").value = q.demo?.haul ?? 0;
+  $("taxRate").value = q.taxRate ?? 0;
+  $("discount").value = q.discount ?? 0;
+  $("notes").value = q.notes || "";
+  $("quoteId").textContent = "Editing · " + (q.customer.name || "Untitled");
+  renderSections();
+  renderRepairs();
+  renderGates();
+  recalc();
+}
+
+function newQuote() {
+  if (!confirm("Start a new quote? Unsaved changes will be lost.")) return;
+  window._currentQuoteId = null;
+  $("custName").value = "";
+  $("custPhone").value = "";
+  $("custEmail").value = "";
+  $("custAddress").value = "";
+  $("quoteDate").value = todayStr();
+  state.jobType = "new";
+  state.sections = [];
+  state.repairs = [];
+  state.gates = [];
+  $("demoFeet").value = 0;
+  $("demoRate").value = 4;
+  $("demoHaul").value = 0;
+  $("taxRate").value = 0;
+  $("discount").value = 0;
+  $("notes").value = "";
+  document.querySelectorAll("#jobTypePills .pill").forEach(p => p.classList.toggle("active", p.dataset.job === "new"));
+  $("repairsCard").classList.add("hidden");
+  $("quoteId").textContent = "New Quote";
+  renderSections();
+  renderRepairs();
+  renderGates();
+  recalc();
+}
+
+function todayStr() {
+  const d = new Date();
+  return d.toLocaleDateString();
+}
+
+// Wire up live recalc on number/text inputs that aren't per-line
+["demoFeet","demoRate","demoHaul","taxRate","discount"].forEach(id => {
+  $(id).addEventListener("input", recalc);
+});
+
+// ------------------ Invoice-style print builder ------------------
+const COMPANY = {
+  name: "Resendiz Fence",
+  tagline: "Professional Fence Installation & Repair",
+  // Edit these to your real info — they show on every printed estimate
+  phone: "",
+  email: "",
+  address: "",
+  license: "",
+};
+
+function escHtml(s) {
+  return String(s == null ? "" : s)
+    .replace(/&/g,"&amp;").replace(/</g,"&lt;").replace(/>/g,"&gt;")
+    .replace(/"/g,"&quot;").replace(/\n/g,"<br/>");
+}
+
+function estimateNumber() {
+  // Stable per-customer-name+date number; falls back to date-based id
+  const seed = ($("custName").value || "") + ($("quoteDate").value || todayStr());
+  let h = 0;
+  for (let i = 0; i < seed.length; i++) h = (h * 31 + seed.charCodeAt(i)) >>> 0;
+  const n = (h % 9000) + 1000;
+  const d = new Date();
+  const yymm = String(d.getFullYear()).slice(-2) + String(d.getMonth()+1).padStart(2,"0");
+  return `EST-${yymm}-${n}`;
+}
+
+function buildPrintSheet() {
+  const cust = {
+    name: $("custName").value,
+    phone: $("custPhone").value,
+    email: $("custEmail").value,
+    address: $("custAddress").value,
+    date: $("quoteDate").value || todayStr(),
+  };
+
+  const jobLabel = { new: "New Installation", repair: "Repair", replace: "Replacement" }[state.jobType] || "Estimate";
+
+  // Build line items grouped by category
+  const groups = [];
+
+  if (state.sections.length > 0) {
+    groups.push({
+      title: "Fence Installation",
+      rows: state.sections.map((s) => {
+        const c = sectionCost(s);
+        const mat = MATERIAL_DEFAULTS[s.material]?.label || "Fence";
+        const desc = `${mat} — ${s.height} ft tall`;
+        const sub = `${s.feet} LF @ ${fmt(c.effectiveRate)}/ft` +
+          (s.corners > 0 ? ` &nbsp;·&nbsp; ${s.corners} corner/end/gate posts @ ${fmt(CORNER_POST_COST)} ea` : "") +
+          (s.note ? ` &nbsp;·&nbsp; ${escHtml(s.note)}` : "");
+        return {
+          desc, sub,
+          qty: `${s.feet} LF`,
+          rate: fmt(c.effectiveRate),
+          amount: c.total,
+        };
+      })
+    });
+  }
+
+  if (state.gates.length > 0) {
+    groups.push({
+      title: "Gates",
+      rows: state.gates.map(g => ({
+        desc: g.label,
+        sub: "",
+        qty: String(g.qty),
+        rate: fmt(g.price),
+        amount: gateCost(g),
+      }))
+    });
+  }
+
+  if (state.jobType === "repair" && state.repairs.length > 0) {
+    groups.push({
+      title: "Repair Work",
+      rows: state.repairs.map(r => ({
+        desc: r.label,
+        sub: "",
+        qty: String(r.qty),
+        rate: fmt(r.price),
+        amount: repairCost(r),
+      }))
+    });
+  }
+
+  const demoFeet = Number($("demoFeet").value) || 0;
+  const demoRate = Number($("demoRate").value) || 0;
+  const demoHaul = Number($("demoHaul").value) || 0;
+  const demoRows = [];
+  if (demoFeet > 0 && demoRate > 0) {
+    demoRows.push({
+      desc: "Remove existing fence", sub: "",
+      qty: `${demoFeet} LF`, rate: fmt(demoRate), amount: demoFeet * demoRate
+    });
+  }
+  if (demoHaul > 0) {
+    demoRows.push({
+      desc: "Haul-away & disposal", sub: "",
+      qty: "1", rate: fmt(demoHaul), amount: demoHaul
+    });
+  }
+  if (demoRows.length > 0) groups.push({ title: "Demo & Removal", rows: demoRows });
+
+  // Totals
+  const subtotal = groups.reduce((a, g) => a + g.rows.reduce((x, r) => x + r.amount, 0), 0);
+  const discount = Number($("discount").value) || 0;
+  const afterDiscount = Math.max(0, subtotal - discount);
+  const taxRate = Number($("taxRate").value) || 0;
+  const tax = afterDiscount * (taxRate / 100);
+  const grand = afterDiscount + tax;
+
+  // Render line item rows
+  let rowIdx = 0;
+  const itemRowsHtml = groups.map(g => {
+    const gh = `<tr class="ps-group-row"><td colspan="5">${escHtml(g.title)}</td></tr>`;
+    const rs = g.rows.map(r => {
+      rowIdx++;
+      return `<tr>
+        <td class="num">${rowIdx}</td>
+        <td>
+          <div class="ps-item-desc">${escHtml(r.desc)}</div>
+          ${r.sub ? `<div class="ps-item-sub">${r.sub}</div>` : ""}
+        </td>
+        <td class="num">${escHtml(r.qty)}</td>
+        <td class="num">${escHtml(r.rate)}</td>
+        <td class="amt">${fmt(r.amount)}</td>
+      </tr>`;
+    }).join("");
+    return gh + rs;
+  }).join("");
+
+  // Company contact lines
+  const companyLines = [];
+  if (COMPANY.address) companyLines.push(escHtml(COMPANY.address));
+  if (COMPANY.phone)   companyLines.push(escHtml(COMPANY.phone));
+  if (COMPANY.email)   companyLines.push(escHtml(COMPANY.email));
+  if (COMPANY.license) companyLines.push("Lic. " + escHtml(COMPANY.license));
+  const companyHtml = companyLines.length
+    ? `<div class="ps-brand-tag">${companyLines.join(" &nbsp;·&nbsp; ")}</div>`
+    : `<div class="ps-brand-tag">${escHtml(COMPANY.tagline)}</div>`;
+
+  // Photos (all sections combined)
+  const photoTiles = [];
+  state.sections.forEach((s, i) => {
+    (s.photos || []).forEach((p, j) => {
+      const cap = `Section ${i+1}` + (s.note ? ` — ${escHtml(s.note)}` : "");
+      photoTiles.push(`
+        <div class="ps-photo-tile">
+          <img src="${p.data}" />
+          <div class="ps-photo-cap">${cap}</div>
+        </div>`);
+    });
+  });
+  const photosHtml = photoTiles.length ? `
+    <div class="ps-photos">
+      <div class="ps-section-heading">Site Photos</div>
+      <div class="ps-photo-grid">${photoTiles.join("")}</div>
+    </div>` : "";
+
+  const notes = $("notes").value;
+  const notesHtml = notes ? `
+    <div class="ps-notes">
+      <strong>Notes:</strong> ${escHtml(notes)}
+    </div>` : "";
+
+  $("printSheet").innerHTML = `
+    <div class="ps-letterhead">
+      <div class="ps-logo">
+        <div class="ps-logo-mark">RF</div>
+        <div>
+          <div class="ps-brand-name">${escHtml(COMPANY.name)}</div>
+          ${companyHtml}
+        </div>
+      </div>
+      <div class="ps-doc-meta">
+        <div class="ps-doc-title">ESTIMATE</div>
+        <div class="ps-doc-num">
+          <strong>No.</strong> ${estimateNumber()}<br/>
+          <strong>Date:</strong> ${escHtml(cust.date)}
+        </div>
+      </div>
+    </div>
+
+    <div class="ps-parties">
+      <div class="ps-party-card">
+        <div class="ps-party-label">Prepared For</div>
+        <div class="ps-party-name">${escHtml(cust.name) || "—"}</div>
+        ${cust.phone ? `<div class="ps-party-line">${escHtml(cust.phone)}</div>` : ""}
+        ${cust.email ? `<div class="ps-party-line">${escHtml(cust.email)}</div>` : ""}
+      </div>
+      <div class="ps-party-card">
+        <div class="ps-party-label">Job Site</div>
+        <div class="ps-party-name">${escHtml(cust.address) || "—"}</div>
+        <div class="ps-party-line"><strong>Scope:</strong> ${escHtml(jobLabel)}</div>
+      </div>
+    </div>
+
+    <div class="ps-section-heading">Scope of Work</div>
+    <table class="ps-items">
+      <thead>
+        <tr>
+          <th class="num" style="width:5%">#</th>
+          <th style="width:55%">Description</th>
+          <th class="num" style="width:12%">Qty</th>
+          <th class="num" style="width:13%">Rate</th>
+          <th class="amt" style="width:15%">Amount</th>
+        </tr>
+      </thead>
+      <tbody>
+        ${itemRowsHtml || `<tr><td colspan="5" style="text-align:center;padding:24px;color:#9ca3af;">No line items.</td></tr>`}
+      </tbody>
+    </table>
+
+    <div class="ps-totals-wrap">
+      <table class="ps-totals">
+        <tr><td class="lbl">Subtotal</td><td class="val">${fmt(subtotal)}</td></tr>
+        ${discount > 0 ? `<tr><td class="lbl">Discount</td><td class="val">−${fmt(discount)}</td></tr>` : ""}
+        ${tax > 0 ? `<tr><td class="lbl">Tax (${taxRate}%)</td><td class="val">${fmt(tax)}</td></tr>` : ""}
+        <tr class="grand"><td class="lbl">Total Due</td><td class="val">${fmt(grand)}</td></tr>
+      </table>
+    </div>
+
+    ${notesHtml}
+
+    <div class="ps-terms">
+      <strong>Terms &amp; Conditions:</strong> This estimate is valid for 30 days from the date above.
+      A 50% deposit is required to schedule the work; balance is due upon completion. Pricing assumes
+      standard soil conditions and access to the work area; rock, concrete, or buried obstacles may
+      require additional charges. Customer is responsible for locating property lines and obtaining
+      any required HOA approvals. Underground utilities will be marked prior to digging.
+    </div>
+
+    <div class="ps-signatures">
+      <div class="ps-sig-block">
+        <div class="ps-sig-line"></div>
+        <div class="ps-sig-label">Customer Signature &amp; Date</div>
+      </div>
+      <div class="ps-sig-block">
+        <div class="ps-sig-line"></div>
+        <div class="ps-sig-label">Resendiz Fence — Authorized Signature</div>
+      </div>
+    </div>
+
+    ${photosHtml}
+
+    <div class="ps-footer">
+      Thank you for choosing ${escHtml(COMPANY.name)}.
+    </div>
+  `;
+}
+
+window.addEventListener("beforeprint", buildPrintSheet);
+
+// Initial render
+$("quoteDate").value = todayStr();
+renderSections();
+renderRepairs();
+renderGates();
+recalc();
+</script>
+
+</body>
+</html>
